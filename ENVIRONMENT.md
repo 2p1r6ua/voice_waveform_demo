@@ -1,85 +1,40 @@
 # Development Environment
 
-## Project
+## OS
 
-* Project name: voice_waveform_demo
-* Project path: `D:\Projects\voice_waveform_demo`
-* Main target platform: Android
-* Later target platform: iOS
-* Current OS: Windows
+- Windows 11
+- Locale: zh-CN
 
-## Flutter SDK
+## Flutter
 
-* Flutter SDK path: `D:\dev\flutter`
+- Flutter SDK: D:\dev\flutter
+- Flutter version: 3.44.0
+- Dart version: 3.12.0
+- Channel: stable
 
-### flutter --version
+## Android
 
-```text
-在这里粘贴 flutter --version 输出
-```
-
-## Android SDK
-
-* Android SDK path: `D:\Android\Sdk`
-
-If Android Studio uses another SDK path, update this section.
+- Android SDK: D:\Android\Sdk
+- ANDROID_HOME: D:\Android\Sdk
+- ANDROID_SDK_ROOT: D:\Android\Sdk
+- Android SDK version: 36.1.0
+- Android platform: android-36
+- Android build-tools: 36.1.0
+- Android licenses: accepted
+- Android Studio JDK: D:\Program Files\Android\Android Studio\jbr\bin\java
 
 ## Android Studio
 
-* Android Studio installed: yes
-* Android SDK Manager available: yes
-* Android SDK Build-Tools installed: yes
-* Android SDK Platform-Tools installed: yes
-* Android SDK Command-line Tools installed: yes
+- Android Studio path: D:\Program Files\Android\Android Studio
 
-## VS Code
+## Target
 
-* VS Code installed: yes
-* Flutter extension installed: yes
-* Dart extension installed: yes
+- First target: Android
+- Later target: iOS
+- Current test device: DBY W09
 
-## flutter doctor -v
+## Known notes
 
-```text
-在这里粘贴 flutter doctor -v 的关键输出
-[✓] Flutter (Channel stable, 3.44.0, on Microsoft Windows [版本 10.0.26200.8457], locale zh-CN) [571ms]
-    • Flutter version 3.44.0 on channel stable at D:\dev\flutter
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision 559ffa3f75 (13 days ago), 2026-05-15 14:13:13 -0700
-    • Engine revision 4c525dac5e
-    • Dart version 3.12.0
-    • DevTools version 2.57.0
-    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android,
-      enable-ios, cli-animations, enable-native-assets, enable-swift-package-manager, omit-legacy-version-file,
-      enable-lldb-debugging, enable-uiscene-migration
-
-
-重点保留：
-[√] Flutter
-[√] Android toolchain
-[√] Android Studio
-[√] Connected device
-
-如果有报错，需要保留完整报错信息。
-```
-
-## Connected Devices
-
-### flutter devices
-
-```text
-在这里粘贴 flutter devices 输出
-```
-
-### adb devices
-
-```text
-在这里粘贴 adb devices 输出
-```
-
-## Notes
-
-* Android is the first test target.
-* iOS testing will be done later on macOS with Xcode.
-* The first development stage uses mock volume stream.
-* Real microphone recording will be added after the waveform UI is stable.
+- Chrome web target is not required for this Android-first project.
+- Gradle network may need proxy.
+- NDK 28.2.13676358 should be installed in D:\Android\Sdk\ndk\28.2.13676358.
