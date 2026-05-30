@@ -1,95 +1,142 @@
-# Voice Memo Waveform Spec
+# SPEC.md 
 
-## Visual Style
+## Android-only Current Scope
 
-Reference: iPhone Voice Memos recording waveform.
+This project currently targets Android only.
 
-- Background: black
-- Bar color: white
-- Bar shape: rounded vertical rectangle
-- Bar alignment: vertically centered
-- Min bar height: 12dp
-- Max bar height: 58dp
-- Bar gap: 6dp
-- Default bar width: 6dp
-- Scroll direction: right to left
-- Newest data: right side
-- Older data: moves left
+The final component should run on:
 
-## Data Input
+* Android physical device
+* Flutter debug mode
+* Flutter profile mode
 
-Phase 1:
+iOS support is intentionally excluded for now.
 
-VoiceMemoWaveform receives:
+## Visual Refinement Requirements
 
-Stream<double> volumeStream
+The waveform should resemble iPhone Voice Memos:
 
-The volume value range is:
+* Black background
+* White rounded bars
+* Bars vertically centered
+* New bars appear on the right
+* Old bars move smoothly to the left
+* No visible jumping when new bars are added
+* No sharp height flicker
+* Quiet audio still shows minimum bars
+* Loud audio should not clip too aggressively
 
-0.0 ~ 1.0
+Default parameters:
 
-Phase 2:
-
-RecorderVolumeSource will provide the same Stream<double> from real microphone data.
+```text
+minBarHeight = 12dp
+maxBarHeight = 58dp
+barGap = 6dp
+barWidth = 6dp
+barInterval = 80ms
+scrollDirection = rightToLeft
+```
 
 ## Volume Mapping
 
-Input volume should be clamped:
+Input volume range:
 
-0.0 <= volume <= 1.0
+```text
+0.0 ~ 1.0
+```
 
-Use a curve to improve low-volume visibility:
+Recommended mapping:
 
-curved = pow(volume, 0.6)
+```text
+clamped = clamp(volume, 0.0, 1.0)
+curved = pow(clamped, 0.6)
+height = minBarHeight + curved * (maxBarHeight - minBarHeight)
+```
 
-Map to height:
+Recommended smoothing:
 
-height = 12.0 + curved * (58.0 - 12.0)
+```text
+if newVolume > previousVolume:
+    use faster attack
+else:
+    use slower release
+```
 
-## Animation
+Suggested coefficients:
 
-Use 60fps-level animation with AnimationController or Ticker.
+```text
+attack = 0.55 ~ 0.75
+release = 0.15 ~ 0.35
+```
 
-Do not only repaint when new volume data arrives.
+## Android Recording Requirements
 
-The component should scroll continuously.
+The recording module should provide:
 
-Suggested bar interval:
+```dart
+abstract class VolumeSource {
+  Stream<double> get volumeStream;
+  Future<void> start();
+  Future<void> stop();
+  Future<void> dispose();
+}
+```
 
-80ms
+The UI component should not know whether the volume comes from:
 
-Suggested pitch:
+* mock data
+* Android microphone
+* file playback
+* network stream
 
-barWidth + barGap = 12dp
+## Android Permission
 
-Suggested scroll speed:
+Add to:
 
-12dp / 80ms = 150dp/s
+```text
+android/app/src/main/AndroidManifest.xml
+```
 
-## Phase 1
+Required permission:
 
-Implement mock waveform only.
-
-Files:
-- lib/voice_waveform/voice_memo_waveform.dart
-- lib/voice_waveform/waveform_controller.dart
-- lib/voice_waveform/waveform_painter.dart
-- lib/voice_waveform/volume_mapper.dart
-- lib/voice_waveform/mock_volume_source.dart
-- lib/main.dart
-
-## Phase 2
-
-Add real microphone input.
-
-Possible packages:
-- record
-- permission_handler
-
-Android permission:
-
+```xml
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
+```
 
-iOS permission later:
+The app must handle:
 
-NSMicrophoneUsageDescription
+* permission granted
+* permission denied
+* permission permanently denied
+* unavailable microphone
+
+## Demo Page Requirements
+
+The demo page should include:
+
+```text
+Use Mock Source
+Start Recording
+Stop Recording
+Clear Waveform
+```
+
+The demo should show:
+
+* current mode: mock / recording / stopped
+* permission state if available
+* simple error message if recording fails
+
+## Performance Requirements
+
+Target:
+
+* Smooth 60fps-level animation on Android
+* No unbounded list growth
+* No stream leak
+* No timer leak
+* No unnecessary object allocation inside painter loop
+
+The waveform should store only enough bars for the visible screen plus a small buffer.
+
+---
