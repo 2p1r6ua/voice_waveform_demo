@@ -13,6 +13,10 @@ enum DemoMode { mock, recording, stopped, error }
 
 typedef RecordingVolumeSourceFactory = RecordingVolumeSource Function();
 
+const _demoNoiseGate = 0.16;
+const _demoAttack = 0.50;
+const _demoMaxRisePerTick = 0.18;
+
 RecordingVolumeSource _defaultRecordingVolumeSourceFactory() {
   return RecorderVolumeSource();
 }
@@ -122,6 +126,9 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
               VoiceMemoWaveform(
                 volumeStream: _activeVolumeStream,
                 controller: _waveformController,
+                noiseGate: _demoNoiseGate,
+                attack: _demoAttack,
+                maxRisePerTick: _demoMaxRisePerTick,
               ),
               if (_showDebugInfo) ...[
                 const SizedBox(height: 12),
@@ -130,9 +137,15 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
                   builder: (context, _) {
                     return _DebugInfo(
                       mode: _mode,
+                      rawVolume: _waveformController.lastRawVolume,
+                      normalizedVolume:
+                          _waveformController.lastNormalizedVolume,
                       displayVolume: _waveformController.lastDisplayVolume,
+                      smoothedVolume: _waveformController.lastSmoothedVolume,
                       estimatedBarHeight:
                           _waveformController.lastEstimatedBarHeight,
+                      impulseSuppressed:
+                          _waveformController.lastImpulseSuppressed,
                     );
                   },
                 ),
@@ -314,20 +327,35 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
 class _DebugInfo extends StatelessWidget {
   const _DebugInfo({
     required this.mode,
+    required this.rawVolume,
+    required this.normalizedVolume,
     required this.displayVolume,
+    required this.smoothedVolume,
     required this.estimatedBarHeight,
+    required this.impulseSuppressed,
   });
 
   final DemoMode mode;
+  final double rawVolume;
+  final double normalizedVolume;
   final double displayVolume;
+  final double smoothedVolume;
   final double estimatedBarHeight;
+  final bool impulseSuppressed;
 
   @override
   Widget build(BuildContext context) {
     return Text(
       'Debug: mode=${mode.name}  '
+      'raw=${rawVolume.toStringAsFixed(3)}  '
+      'normalized=${normalizedVolume.toStringAsFixed(3)}\n'
       'display=${displayVolume.toStringAsFixed(3)}  '
-      'height=${estimatedBarHeight.toStringAsFixed(1)}dp',
+      'smoothed=${smoothedVolume.toStringAsFixed(3)}  '
+      'height=${estimatedBarHeight.toStringAsFixed(1)}dp\n'
+      'impulse=$impulseSuppressed  '
+      'noiseGate=$_demoNoiseGate  '
+      'attack=$_demoAttack  '
+      'maxRise=$_demoMaxRisePerTick',
       textAlign: TextAlign.center,
       style: const TextStyle(color: Colors.white54, fontSize: 12),
     );

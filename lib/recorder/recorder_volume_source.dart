@@ -69,9 +69,9 @@ class RecorderVolumeSource implements RecordingVolumeSource {
     MicrophonePermissionService? permissionService,
     this.amplitudeInterval = const Duration(milliseconds: 80),
     this.floorDb = -45.0,
-    this.ceilingDb = -12.0,
-    this.attack = 0.75,
-    this.release = 0.22,
+    this.ceilingDb = -8.0,
+    this.attack = 0.50,
+    this.release = 0.18,
   }) : _recorder = recorder ?? AudioRecorder(),
        _permissionService =
            permissionService ??
@@ -274,7 +274,7 @@ MicrophonePermissionResult microphonePermissionResultFromStatus(
 double dbToNormalizedVolume(
   double db, {
   double floorDb = -45.0,
-  double ceilingDb = -12.0,
+  double ceilingDb = -8.0,
 }) {
   if (!db.isFinite) {
     return 0;
@@ -290,8 +290,8 @@ double dbToNormalizedVolume(
 double smoothRecorderVolume({
   required double previous,
   required double current,
-  double attack = 0.75,
-  double release = 0.22,
+  double attack = 0.50,
+  double release = 0.18,
 }) {
   final clampedPrevious = previous.clamp(0.0, 1.0).toDouble();
   final clampedCurrent = current.clamp(0.0, 1.0).toDouble();

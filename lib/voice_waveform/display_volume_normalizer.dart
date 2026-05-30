@@ -2,10 +2,10 @@ import 'dart:math';
 
 class DisplayVolumeNormalizer {
   const DisplayVolumeNormalizer({
-    this.noiseGate = 0.10,
-    this.contrastExponent = 1.45,
+    this.noiseGate = 0.16,
+    this.contrastExponent = 1.55,
     this.floorDb = -45.0,
-    this.ceilingDb = -12.0,
+    this.ceilingDb = -8.0,
   }) : assert(noiseGate >= 0 && noiseGate < 1),
        assert(contrastExponent > 0),
        assert(ceilingDb > floorDb);

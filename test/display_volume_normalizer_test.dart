@@ -3,27 +3,24 @@ import 'package:voice_waveform_demo/voice_waveform.dart';
 
 void main() {
   test('gates quiet input to silence', () {
-    const normalizer = DisplayVolumeNormalizer(noiseGate: 0.10);
+    const normalizer = DisplayVolumeNormalizer();
 
-    expect(normalizer.normalizeVolume(0.09), 0);
+    expect(normalizer.normalizeVolume(0.15), 0);
   });
 
   test('contrast curve lowers small values while preserving peaks', () {
-    const normalizer = DisplayVolumeNormalizer(
-      noiseGate: 0.10,
-      contrastExponent: 1.45,
-    );
+    const normalizer = DisplayVolumeNormalizer();
 
-    expect(normalizer.normalizeVolume(0.25), lessThan(0.15));
+    expect(normalizer.normalizeVolume(0.35), lessThan(0.15));
     expect(normalizer.normalizeVolume(1), 1);
   });
 
   test('maps dB using the configured speech display range', () {
-    const normalizer = DisplayVolumeNormalizer(floorDb: -45, ceilingDb: -12);
+    const normalizer = DisplayVolumeNormalizer();
 
     expect(normalizer.dbToVolume(-45), 0);
-    expect(normalizer.dbToVolume(-28.5), closeTo(0.5, 0.0001));
-    expect(normalizer.dbToVolume(-12), 1);
+    expect(normalizer.dbToVolume(-26.5), closeTo(0.5, 0.0001));
+    expect(normalizer.dbToVolume(-8), 1);
   });
 
   test('clamps invalid and out of range inputs', () {

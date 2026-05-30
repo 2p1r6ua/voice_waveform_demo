@@ -34,6 +34,8 @@ void main() {
 
     expect(find.text('Hide Debug'), findsOneWidget);
     expect(find.textContaining('Debug: mode=mock'), findsOneWidget);
+    expect(find.textContaining('impulse='), findsOneWidget);
+    expect(find.textContaining('maxRise='), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 80));
     await tester.pump(const Duration(milliseconds: 16));

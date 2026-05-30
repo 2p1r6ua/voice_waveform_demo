@@ -41,6 +41,12 @@ void main() {
           noiseGate: 0.12,
           attack: 0.8,
           release: 0.18,
+          maxRisePerTick: 0.22,
+          medianWindow: 3,
+          impulseSuppressionEnabled: true,
+          impulseThreshold: 0.5,
+          impulseDamping: 0.4,
+          sustainFrames: 2,
         ),
       ),
     );

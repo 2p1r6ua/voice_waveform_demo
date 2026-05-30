@@ -2,17 +2,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:voice_waveform_demo/voice_waveform/volume_mapper.dart';
 
 void main() {
-  test('maps volume to the configured height range', () {
+  test('maps zero volume to the default minimum height', () {
     const mapper = VolumeMapper();
 
     expect(mapper.mapToHeight(0), 12);
+  });
+
+  test('maps full volume to the default maximum height', () {
+    const mapper = VolumeMapper();
+
     expect(mapper.mapToHeight(1), 58);
   });
 
-  test('clamps volume before mapping', () {
+  test('clamps volume below zero to the default minimum height', () {
     const mapper = VolumeMapper();
 
     expect(mapper.mapToHeight(-1), 12);
+  });
+
+  test('clamps volume above one to the default maximum height', () {
+    const mapper = VolumeMapper();
+
     expect(mapper.mapToHeight(2), 58);
   });
 

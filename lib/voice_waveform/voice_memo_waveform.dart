@@ -17,10 +17,16 @@ class VoiceMemoWaveform extends StatefulWidget {
     this.barColor = Colors.white,
     this.backgroundColor = Colors.black,
     this.barInterval = const Duration(milliseconds: 80),
-    this.contrastExponent = 1.45,
-    this.noiseGate = 0.10,
-    this.attack = 0.75,
-    this.release = 0.22,
+    this.contrastExponent = 1.55,
+    this.noiseGate = 0.16,
+    this.attack = 0.50,
+    this.release = 0.18,
+    this.maxRisePerTick = 0.18,
+    this.medianWindow = 3,
+    this.impulseSuppressionEnabled = true,
+    this.impulseThreshold = 0.45,
+    this.impulseDamping = 0.35,
+    this.sustainFrames = 2,
     this.controller,
   });
 
@@ -37,6 +43,12 @@ class VoiceMemoWaveform extends StatefulWidget {
   final double noiseGate;
   final double attack;
   final double release;
+  final double maxRisePerTick;
+  final int medianWindow;
+  final bool impulseSuppressionEnabled;
+  final double impulseThreshold;
+  final double impulseDamping;
+  final int sustainFrames;
   final VoiceMemoWaveformController? controller;
 
   @override
@@ -72,7 +84,14 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
         oldWidget.contrastExponent != widget.contrastExponent ||
         oldWidget.noiseGate != widget.noiseGate ||
         oldWidget.attack != widget.attack ||
-        oldWidget.release != widget.release) {
+        oldWidget.release != widget.release ||
+        oldWidget.maxRisePerTick != widget.maxRisePerTick ||
+        oldWidget.medianWindow != widget.medianWindow ||
+        oldWidget.impulseSuppressionEnabled !=
+            widget.impulseSuppressionEnabled ||
+        oldWidget.impulseThreshold != widget.impulseThreshold ||
+        oldWidget.impulseDamping != widget.impulseDamping ||
+        oldWidget.sustainFrames != widget.sustainFrames) {
       _waveformController.dispose();
       _waveformController = _createWaveformController();
       _waveformController.start();
@@ -122,6 +141,12 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
       maxBarHeight: widget.maxBarHeight,
       attack: widget.attack,
       release: widget.release,
+      maxRisePerTick: widget.maxRisePerTick,
+      medianWindow: widget.medianWindow,
+      impulseSuppressionEnabled: widget.impulseSuppressionEnabled,
+      impulseThreshold: widget.impulseThreshold,
+      impulseDamping: widget.impulseDamping,
+      sustainFrames: widget.sustainFrames,
       displayVolumeNormalizer: DisplayVolumeNormalizer(
         noiseGate: widget.noiseGate,
         contrastExponent: widget.contrastExponent,
