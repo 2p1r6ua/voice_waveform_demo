@@ -1,24 +1,82 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
-class RecorderPermissionException implements Exception {
-  const RecorderPermissionException();
+enum MicrophonePermissionResult { granted, denied, permanentlyDenied }
 
-  @override
-  String toString() => 'Microphone permission was not granted.';
+abstract class RecordingVolumeSource {
+  Stream<double> get volumeStream;
+
+  Future<void> start();
+
+  Future<void> stop();
+
+  Future<void> dispose();
 }
 
-class RecorderVolumeSource {
+abstract class MicrophonePermissionService {
+  Future<MicrophonePermissionResult> request();
+}
+
+class PermissionHandlerMicrophonePermissionService
+    implements MicrophonePermissionService {
+  const PermissionHandlerMicrophonePermissionService({
+    this.permission = Permission.microphone,
+  });
+
+  final Permission permission;
+
+  @override
+  Future<MicrophonePermissionResult> request() async {
+    final currentStatus = await permission.status;
+    if (currentStatus.isGranted || currentStatus.isPermanentlyDenied) {
+      return microphonePermissionResultFromStatus(currentStatus);
+    }
+
+    final requestedStatus = await permission.request();
+    return microphonePermissionResultFromStatus(requestedStatus);
+  }
+}
+
+class RecorderPermissionDeniedException implements Exception {
+  const RecorderPermissionDeniedException();
+
+  @override
+  String toString() => 'Microphone permission was denied.';
+}
+
+class RecorderPermissionPermanentlyDeniedException implements Exception {
+  const RecorderPermissionPermanentlyDeniedException();
+
+  @override
+  String toString() => 'Microphone permission was permanently denied.';
+}
+
+class RecorderStartException implements Exception {
+  const RecorderStartException(this.cause);
+
+  final Object cause;
+
+  @override
+  String toString() => 'Recording failed to start: $cause';
+}
+
+class RecorderVolumeSource implements RecordingVolumeSource {
   RecorderVolumeSource({
     AudioRecorder? recorder,
+    MicrophonePermissionService? permissionService,
     this.amplitudeInterval = const Duration(milliseconds: 80),
     this.attack = 0.72,
     this.release = 0.22,
-  }) : _recorder = recorder ?? AudioRecorder();
+  }) : _recorder = recorder ?? AudioRecorder(),
+       _permissionService =
+           permissionService ??
+           const PermissionHandlerMicrophonePermissionService();
 
   final AudioRecorder _recorder;
+  final MicrophonePermissionService _permissionService;
   final Duration amplitudeInterval;
   final double attack;
   final double release;
@@ -33,8 +91,12 @@ class RecorderVolumeSource {
   bool _isStarting = false;
   bool _isDisposed = false;
 
+  @override
   Stream<double> get volumeStream => _volumeController.stream;
 
+  bool get isRecording => _isRecording;
+
+  @override
   Future<void> start() async {
     if (_isDisposed || _isRecording || _isStarting) {
       return;
@@ -42,10 +104,7 @@ class RecorderVolumeSource {
 
     _isStarting = true;
     try {
-      final hasPermission = await _recorder.hasPermission();
-      if (!hasPermission) {
-        throw const RecorderPermissionException();
-      }
+      await _ensureMicrophonePermission();
 
       _smoothedVolume = 0;
       _recordingFile = await _createRecordingFile();
@@ -59,44 +118,78 @@ class RecorderVolumeSource {
         path: _recordingFile!.path,
       );
       _isRecording = true;
-    } catch (_) {
-      await _amplitudeSubscription?.cancel();
-      _amplitudeSubscription = null;
-      await _cancelRecorderIfNeeded();
-      await _deleteRecordingFile();
+    } on RecorderPermissionDeniedException {
+      await _cleanupAfterFailedStart();
       rethrow;
+    } on RecorderPermissionPermanentlyDeniedException {
+      await _cleanupAfterFailedStart();
+      rethrow;
+    } catch (error) {
+      await _cleanupAfterFailedStart();
+      throw RecorderStartException(error);
     } finally {
       _isStarting = false;
     }
   }
 
+  @override
   Future<void> stop() async {
     if (_isDisposed || (!_isRecording && !_isStarting)) {
       return;
     }
 
-    await _amplitudeSubscription?.cancel();
-    _amplitudeSubscription = null;
-
-    if (_isRecording || await _recorder.isRecording()) {
-      await _recorder.stop();
-    }
-
-    _isRecording = false;
-    _isStarting = false;
-    _addVolume(0);
-    await _deleteRecordingFile();
+    await _stopInternal(addSilenceSample: true);
   }
 
+  @override
   Future<void> dispose() async {
     if (_isDisposed) {
       return;
     }
 
-    await stop();
+    await _stopInternal(addSilenceSample: false);
     await _recorder.dispose();
     await _volumeController.close();
     _isDisposed = true;
+  }
+
+  Future<void> _ensureMicrophonePermission() async {
+    final permissionResult = await _permissionService.request();
+    switch (permissionResult) {
+      case MicrophonePermissionResult.granted:
+        return;
+      case MicrophonePermissionResult.denied:
+        throw const RecorderPermissionDeniedException();
+      case MicrophonePermissionResult.permanentlyDenied:
+        throw const RecorderPermissionPermanentlyDeniedException();
+    }
+  }
+
+  Future<void> _stopInternal({required bool addSilenceSample}) async {
+    await _amplitudeSubscription?.cancel();
+    _amplitudeSubscription = null;
+
+    try {
+      if (_isRecording || await _recorder.isRecording()) {
+        await _recorder.stop();
+      }
+    } catch (_) {
+      await _cancelRecorderIfNeeded();
+    } finally {
+      _isRecording = false;
+      _isStarting = false;
+      if (addSilenceSample) {
+        _addVolume(0);
+      }
+      await _deleteRecordingFile();
+    }
+  }
+
+  Future<void> _cleanupAfterFailedStart() async {
+    await _amplitudeSubscription?.cancel();
+    _amplitudeSubscription = null;
+    await _cancelRecorderIfNeeded();
+    await _deleteRecordingFile();
   }
 
   void _handleAmplitude(Amplitude amplitude) {
@@ -158,7 +251,19 @@ class RecorderVolumeSource {
   }
 }
 
-double dbToNormalizedVolume(double db, {double minDb = -60, double maxDb = 0}) {
+MicrophonePermissionResult microphonePermissionResultFromStatus(
+  PermissionStatus status,
+) {
+  if (status.isGranted) {
+    return MicrophonePermissionResult.granted;
+  }
+  if (status.isPermanentlyDenied) {
+    return MicrophonePermissionResult.permanentlyDenied;
+  }
+  return MicrophonePermissionResult.denied;
+}
+
+double dbToNormalizedVolume(double db, {double minDb = -72, double maxDb = 0}) {
   if (!db.isFinite) {
     return 0;
   }

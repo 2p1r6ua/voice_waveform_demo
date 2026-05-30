@@ -1,10 +1,11 @@
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voice_waveform_demo/recorder/recorder_volume_source.dart';
 
 void main() {
   test('maps dBFS amplitude into normalized volume', () {
-    expect(dbToNormalizedVolume(-60), 0);
-    expect(dbToNormalizedVolume(-30), 0.5);
+    expect(dbToNormalizedVolume(-72), 0);
+    expect(dbToNormalizedVolume(-36), 0.5);
     expect(dbToNormalizedVolume(0), 1);
   });
 
@@ -30,5 +31,20 @@ void main() {
 
     expect(attacked, closeTo(0.72, 0.0001));
     expect(released, closeTo(0.5616, 0.0001));
+  });
+
+  test('maps microphone permission statuses', () {
+    expect(
+      microphonePermissionResultFromStatus(PermissionStatus.granted),
+      MicrophonePermissionResult.granted,
+    );
+    expect(
+      microphonePermissionResultFromStatus(PermissionStatus.denied),
+      MicrophonePermissionResult.denied,
+    );
+    expect(
+      microphonePermissionResultFromStatus(PermissionStatus.permanentlyDenied),
+      MicrophonePermissionResult.permanentlyDenied,
+    );
   });
 }

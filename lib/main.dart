@@ -12,47 +12,84 @@ void main() {
 
 enum DemoMode { mock, recording, stopped, error }
 
+typedef RecordingVolumeSourceFactory = RecordingVolumeSource Function();
+
+RecordingVolumeSource _defaultRecordingVolumeSourceFactory() {
+  return RecorderVolumeSource();
+}
+
 class VoiceWaveformDemoApp extends StatelessWidget {
-  const VoiceWaveformDemoApp({super.key});
+  const VoiceWaveformDemoApp({
+    super.key,
+    this.recorderSourceFactory = _defaultRecordingVolumeSourceFactory,
+  });
+
+  final RecordingVolumeSourceFactory recorderSourceFactory;
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Voice Waveform Demo',
-      home: VoiceWaveformDemoPage(),
+      home: VoiceWaveformDemoPage(recorderSourceFactory: recorderSourceFactory),
     );
   }
 }
 
 class VoiceWaveformDemoPage extends StatefulWidget {
-  const VoiceWaveformDemoPage({super.key});
+  const VoiceWaveformDemoPage({
+    super.key,
+    this.recorderSourceFactory = _defaultRecordingVolumeSourceFactory,
+  });
+
+  final RecordingVolumeSourceFactory recorderSourceFactory;
 
   @override
   State<VoiceWaveformDemoPage> createState() => _VoiceWaveformDemoPageState();
 }
 
-class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage> {
+class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
+    with WidgetsBindingObserver {
   MockVolumeSource? _mockVolumeSource;
-  late final RecorderVolumeSource _recorderVolumeSource;
+  late final RecordingVolumeSource _recorderVolumeSource;
   late Stream<double> _activeVolumeStream;
 
   DemoMode _mode = DemoMode.mock;
   String? _errorMessage;
   int _waveformGeneration = 0;
+  int _recordingRequestId = 0;
+  bool _isStartInProgress = false;
+  bool _isStopInProgress = false;
 
   @override
   void initState() {
     super.initState();
-    _recorderVolumeSource = RecorderVolumeSource();
+    WidgetsBinding.instance.addObserver(this);
+    _recorderVolumeSource = widget.recorderSourceFactory();
     _startMockSource();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_mockVolumeSource?.dispose());
     unawaited(_recorderVolumeSource.dispose());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        if (_mode == DemoMode.recording) {
+          unawaited(_stopRecordingForLifecycle());
+        }
+      case AppLifecycleState.resumed:
+        break;
+    }
   }
 
   @override
@@ -121,9 +158,14 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage> {
   }
 
   Future<void> _useMockSource() async {
+    _recordingRequestId++;
     await _recorderVolumeSource.stop();
     await _mockVolumeSource?.dispose();
     _startMockSource();
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _mode = DemoMode.mock;
       _errorMessage = null;
@@ -132,37 +174,68 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage> {
   }
 
   Future<void> _startRecording() async {
-    if (_mode == DemoMode.recording) {
+    if (_mode == DemoMode.recording || _isStartInProgress) {
       return;
     }
 
+    _isStartInProgress = true;
+    final requestId = ++_recordingRequestId;
     await _mockVolumeSource?.dispose();
     _mockVolumeSource = null;
 
-    setState(() {
-      _activeVolumeStream = _recorderVolumeSource.volumeStream;
-      _errorMessage = null;
-      _waveformGeneration++;
-    });
+    if (mounted) {
+      setState(() {
+        _activeVolumeStream = _recorderVolumeSource.volumeStream;
+        _errorMessage = null;
+        _waveformGeneration++;
+      });
+    }
 
     try {
       await _recorderVolumeSource.start();
-      setState(() => _mode = DemoMode.recording);
-    } on RecorderPermissionException {
+      if (!mounted || requestId != _recordingRequestId) {
+        return;
+      }
       setState(() {
-        _mode = DemoMode.error;
-        _errorMessage = 'Microphone permission was not granted.';
+        _mode = DemoMode.recording;
+        _errorMessage = null;
       });
+    } on RecorderPermissionDeniedException {
+      if (requestId == _recordingRequestId) {
+        _showRecordingError('Microphone permission was denied.');
+      }
+    } on RecorderPermissionPermanentlyDeniedException {
+      if (requestId == _recordingRequestId) {
+        _showRecordingError(
+          'Microphone permission is permanently denied. Enable it in Android app settings.',
+        );
+      }
+    } on RecorderStartException catch (error) {
+      if (requestId == _recordingRequestId) {
+        _showRecordingError(error.toString());
+      }
     } catch (error) {
-      setState(() {
-        _mode = DemoMode.error;
-        _errorMessage = 'Recording failed: $error';
-      });
+      if (requestId == _recordingRequestId) {
+        _showRecordingError('Recording failed: $error');
+      }
+    } finally {
+      _isStartInProgress = false;
     }
   }
 
   Future<void> _stopRecording() async {
-    await _recorderVolumeSource.stop();
+    _recordingRequestId++;
+    if (_isStopInProgress) {
+      return;
+    }
+
+    _isStopInProgress = true;
+    try {
+      await _recorderVolumeSource.stop();
+    } finally {
+      _isStopInProgress = false;
+    }
+
     if (!mounted) {
       return;
     }
@@ -175,6 +248,40 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage> {
 
   void _clearWaveform() {
     setState(() => _waveformGeneration++);
+  }
+
+  Future<void> _stopRecordingForLifecycle() async {
+    _recordingRequestId++;
+    if (_isStopInProgress) {
+      return;
+    }
+
+    _isStopInProgress = true;
+    try {
+      await _recorderVolumeSource.stop();
+    } finally {
+      _isStopInProgress = false;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _mode = DemoMode.stopped;
+      _errorMessage = 'Recording stopped while app was backgrounded.';
+    });
+  }
+
+  void _showRecordingError(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _mode = DemoMode.error;
+      _errorMessage = message;
+    });
   }
 }
 
