@@ -2,7 +2,7 @@ import 'dart:math';
 
 class DisplayVolumeNormalizer {
   const DisplayVolumeNormalizer({
-    this.noiseGate = 0.16,
+    this.noiseGate = 0.14,
     this.contrastExponent = 1.55,
     this.floorDb = -45.0,
     this.ceilingDb = -8.0,
