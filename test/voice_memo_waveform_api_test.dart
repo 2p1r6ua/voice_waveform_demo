@@ -37,6 +37,10 @@ void main() {
           barColor: Colors.green,
           backgroundColor: Colors.blue,
           barInterval: const Duration(milliseconds: 120),
+          contrastExponent: 1.6,
+          noiseGate: 0.12,
+          attack: 0.8,
+          release: 0.18,
         ),
       ),
     );

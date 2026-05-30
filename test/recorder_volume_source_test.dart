@@ -4,9 +4,9 @@ import 'package:voice_waveform_demo/recorder/recorder_volume_source.dart';
 
 void main() {
   test('maps dBFS amplitude into normalized volume', () {
-    expect(dbToNormalizedVolume(-72), 0);
-    expect(dbToNormalizedVolume(-36), 0.5);
-    expect(dbToNormalizedVolume(0), 1);
+    expect(dbToNormalizedVolume(-45), 0);
+    expect(dbToNormalizedVolume(-28.5), 0.5);
+    expect(dbToNormalizedVolume(-12), 1);
   });
 
   test('clamps dBFS amplitude outside the expected range', () {
@@ -16,21 +16,11 @@ void main() {
   });
 
   test('smooths recorder volume with faster attack than release', () {
-    final attacked = smoothRecorderVolume(
-      previous: 0,
-      current: 1,
-      attack: 0.72,
-      release: 0.22,
-    );
-    final released = smoothRecorderVolume(
-      previous: attacked,
-      current: 0,
-      attack: 0.72,
-      release: 0.22,
-    );
+    final attacked = smoothRecorderVolume(previous: 0, current: 1);
+    final released = smoothRecorderVolume(previous: attacked, current: 0);
 
-    expect(attacked, closeTo(0.72, 0.0001));
-    expect(released, closeTo(0.5616, 0.0001));
+    expect(attacked, closeTo(0.75, 0.0001));
+    expect(released, closeTo(0.585, 0.0001));
   });
 
   test('maps microphone permission statuses', () {

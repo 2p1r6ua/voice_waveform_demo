@@ -25,10 +25,10 @@ void main() {
     expect(height, lessThan(58));
   });
 
-  test('uses a more sensitive default curve for low volumes', () {
+  test('uses a linear default display mapping', () {
     const mapper = VolumeMapper();
 
-    expect(mapper.mapToHeight(0.25), greaterThan(35));
+    expect(mapper.mapToHeight(0.25), closeTo(23.5, 0.0001));
   });
 
   test('supports custom min and max heights', () {

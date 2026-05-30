@@ -68,7 +68,9 @@ class RecorderVolumeSource implements RecordingVolumeSource {
     AudioRecorder? recorder,
     MicrophonePermissionService? permissionService,
     this.amplitudeInterval = const Duration(milliseconds: 80),
-    this.attack = 0.72,
+    this.floorDb = -45.0,
+    this.ceilingDb = -12.0,
+    this.attack = 0.75,
     this.release = 0.22,
   }) : _recorder = recorder ?? AudioRecorder(),
        _permissionService =
@@ -78,6 +80,8 @@ class RecorderVolumeSource implements RecordingVolumeSource {
   final AudioRecorder _recorder;
   final MicrophonePermissionService _permissionService;
   final Duration amplitudeInterval;
+  final double floorDb;
+  final double ceilingDb;
   final double attack;
   final double release;
 
@@ -193,7 +197,11 @@ class RecorderVolumeSource implements RecordingVolumeSource {
   }
 
   void _handleAmplitude(Amplitude amplitude) {
-    final normalized = dbToNormalizedVolume(amplitude.current);
+    final normalized = dbToNormalizedVolume(
+      amplitude.current,
+      floorDb: floorDb,
+      ceilingDb: ceilingDb,
+    );
     _smoothedVolume = smoothRecorderVolume(
       previous: _smoothedVolume,
       current: normalized,
@@ -263,18 +271,26 @@ MicrophonePermissionResult microphonePermissionResultFromStatus(
   return MicrophonePermissionResult.denied;
 }
 
-double dbToNormalizedVolume(double db, {double minDb = -72, double maxDb = 0}) {
+double dbToNormalizedVolume(
+  double db, {
+  double floorDb = -45.0,
+  double ceilingDb = -12.0,
+}) {
   if (!db.isFinite) {
     return 0;
   }
 
-  return ((db - minDb) / (maxDb - minDb)).clamp(0.0, 1.0).toDouble();
+  if (ceilingDb <= floorDb) {
+    return 0;
+  }
+
+  return ((db - floorDb) / (ceilingDb - floorDb)).clamp(0.0, 1.0).toDouble();
 }
 
 double smoothRecorderVolume({
   required double previous,
   required double current,
-  double attack = 0.72,
+  double attack = 0.75,
   double release = 0.22,
 }) {
   final clampedPrevious = previous.clamp(0.0, 1.0).toDouble();

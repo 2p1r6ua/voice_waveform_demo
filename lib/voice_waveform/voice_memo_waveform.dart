@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'display_volume_normalizer.dart';
 import 'volume_mapper.dart';
 import 'waveform_controller.dart';
 import 'waveform_painter.dart';
@@ -16,6 +17,10 @@ class VoiceMemoWaveform extends StatefulWidget {
     this.barColor = Colors.white,
     this.backgroundColor = Colors.black,
     this.barInterval = const Duration(milliseconds: 80),
+    this.contrastExponent = 1.45,
+    this.noiseGate = 0.10,
+    this.attack = 0.75,
+    this.release = 0.22,
     this.controller,
   });
 
@@ -28,6 +33,10 @@ class VoiceMemoWaveform extends StatefulWidget {
   final Color barColor;
   final Color backgroundColor;
   final Duration barInterval;
+  final double contrastExponent;
+  final double noiseGate;
+  final double attack;
+  final double release;
   final VoiceMemoWaveformController? controller;
 
   @override
@@ -57,7 +66,13 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
         oldWidget.controller != widget.controller ||
         oldWidget.barWidth != widget.barWidth ||
         oldWidget.barGap != widget.barGap ||
-        oldWidget.barInterval != widget.barInterval) {
+        oldWidget.barInterval != widget.barInterval ||
+        oldWidget.minBarHeight != widget.minBarHeight ||
+        oldWidget.maxBarHeight != widget.maxBarHeight ||
+        oldWidget.contrastExponent != widget.contrastExponent ||
+        oldWidget.noiseGate != widget.noiseGate ||
+        oldWidget.attack != widget.attack ||
+        oldWidget.release != widget.release) {
       _waveformController.dispose();
       _waveformController = _createWaveformController();
       _waveformController.start();
@@ -103,6 +118,14 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
       sampleInterval: widget.barInterval,
       barWidth: widget.barWidth,
       barGap: widget.barGap,
+      minBarHeight: widget.minBarHeight,
+      maxBarHeight: widget.maxBarHeight,
+      attack: widget.attack,
+      release: widget.release,
+      displayVolumeNormalizer: DisplayVolumeNormalizer(
+        noiseGate: widget.noiseGate,
+        contrastExponent: widget.contrastExponent,
+      ),
       publicController: widget.controller,
     );
   }

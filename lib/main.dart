@@ -60,6 +60,7 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
   int _recordingRequestId = 0;
   bool _isStartInProgress = false;
   bool _isStopInProgress = false;
+  bool _showDebugInfo = false;
 
   @override
   void initState() {
@@ -122,6 +123,20 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
                 volumeStream: _activeVolumeStream,
                 controller: _waveformController,
               ),
+              if (_showDebugInfo) ...[
+                const SizedBox(height: 12),
+                AnimatedBuilder(
+                  animation: _waveformController,
+                  builder: (context, _) {
+                    return _DebugInfo(
+                      mode: _mode,
+                      displayVolume: _waveformController.lastDisplayVolume,
+                      estimatedBarHeight:
+                          _waveformController.lastEstimatedBarHeight,
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 36),
               Wrap(
                 alignment: WrapAlignment.center,
@@ -143,6 +158,10 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
                   _DemoButton(
                     label: 'Clear Waveform',
                     onPressed: _clearWaveform,
+                  ),
+                  _DemoButton(
+                    label: _showDebugInfo ? 'Hide Debug' : 'Show Debug',
+                    onPressed: _toggleDebugInfo,
                   ),
                 ],
               ),
@@ -251,6 +270,12 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
     _waveformController.clear();
   }
 
+  void _toggleDebugInfo() {
+    setState(() {
+      _showDebugInfo = !_showDebugInfo;
+    });
+  }
+
   Future<void> _stopRecordingForLifecycle() async {
     _recordingRequestId++;
     if (_isStopInProgress) {
@@ -283,6 +308,29 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
       _mode = DemoMode.error;
       _errorMessage = message;
     });
+  }
+}
+
+class _DebugInfo extends StatelessWidget {
+  const _DebugInfo({
+    required this.mode,
+    required this.displayVolume,
+    required this.estimatedBarHeight,
+  });
+
+  final DemoMode mode;
+  final double displayVolume;
+  final double estimatedBarHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'Debug: mode=${mode.name}  '
+      'display=${displayVolume.toStringAsFixed(3)}  '
+      'height=${estimatedBarHeight.toStringAsFixed(1)}dp',
+      textAlign: TextAlign.center,
+      style: const TextStyle(color: Colors.white54, fontSize: 12),
+    );
   }
 }
 

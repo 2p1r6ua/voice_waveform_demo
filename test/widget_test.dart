@@ -27,6 +27,13 @@ void main() {
     expect(find.text('Start Recording'), findsOneWidget);
     expect(find.text('Stop Recording'), findsOneWidget);
     expect(find.text('Clear Waveform'), findsOneWidget);
+    expect(find.text('Show Debug'), findsOneWidget);
+
+    await tester.tap(find.text('Show Debug'));
+    await tester.pump();
+
+    expect(find.text('Hide Debug'), findsOneWidget);
+    expect(find.textContaining('Debug: mode=mock'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 80));
     await tester.pump(const Duration(milliseconds: 16));
