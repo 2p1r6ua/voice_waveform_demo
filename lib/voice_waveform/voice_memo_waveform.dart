@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'volume_mapper.dart';
 import 'waveform_controller.dart';
 import 'waveform_painter.dart';
 
@@ -8,14 +9,26 @@ class VoiceMemoWaveform extends StatefulWidget {
     super.key,
     required this.volumeStream,
     this.height = 72.0,
+    this.minBarHeight = 12.0,
+    this.maxBarHeight = 58.0,
     this.barWidth = 6.0,
     this.barGap = 6.0,
+    this.barColor = Colors.white,
+    this.backgroundColor = Colors.black,
+    this.barInterval = const Duration(milliseconds: 80),
+    this.controller,
   });
 
   final Stream<double> volumeStream;
   final double height;
+  final double minBarHeight;
+  final double maxBarHeight;
   final double barWidth;
   final double barGap;
+  final Color barColor;
+  final Color backgroundColor;
+  final Duration barInterval;
+  final VoiceMemoWaveformController? controller;
 
   @override
   State<VoiceMemoWaveform> createState() => _VoiceMemoWaveformState();
@@ -41,8 +54,10 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
   void didUpdateWidget(covariant VoiceMemoWaveform oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.volumeStream != widget.volumeStream ||
+        oldWidget.controller != widget.controller ||
         oldWidget.barWidth != widget.barWidth ||
-        oldWidget.barGap != widget.barGap) {
+        oldWidget.barGap != widget.barGap ||
+        oldWidget.barInterval != widget.barInterval) {
       _waveformController.dispose();
       _waveformController = _createWaveformController();
       _waveformController.start();
@@ -66,7 +81,15 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
           animation: _animationController,
           builder: (context, _) {
             return CustomPaint(
-              painter: WaveformPainter(controller: _waveformController),
+              painter: WaveformPainter(
+                controller: _waveformController,
+                volumeMapper: VolumeMapper(
+                  minHeight: widget.minBarHeight,
+                  maxHeight: widget.maxBarHeight,
+                ),
+                barColor: widget.barColor,
+                backgroundColor: widget.backgroundColor,
+              ),
             );
           },
         ),
@@ -77,8 +100,10 @@ class _VoiceMemoWaveformState extends State<VoiceMemoWaveform>
   WaveformController _createWaveformController() {
     return WaveformController(
       volumeStream: widget.volumeStream,
+      sampleInterval: widget.barInterval,
       barWidth: widget.barWidth,
       barGap: widget.barGap,
+      publicController: widget.controller,
     );
   }
 }

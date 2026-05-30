@@ -41,4 +41,38 @@ void main() {
     await streamController.close();
     waveformController.dispose();
   });
+
+  test('supports pause resume and clear through public controller', () async {
+    final streamController = StreamController<double>();
+    final publicController = VoiceMemoWaveformController();
+    final waveformController = WaveformController(
+      volumeStream: streamController.stream,
+      publicController: publicController,
+    )..start();
+
+    streamController.add(0.5);
+    await Future<void>.delayed(Duration.zero);
+    expect(waveformController.sampleCount, 1);
+
+    publicController.pause();
+    streamController.add(0.8);
+    await Future<void>.delayed(Duration.zero);
+    expect(publicController.isPaused, isTrue);
+    expect(waveformController.sampleCount, 1);
+
+    publicController.resume();
+    streamController.add(0.8);
+    await Future<void>.delayed(Duration.zero);
+    expect(publicController.isPaused, isFalse);
+    expect(waveformController.sampleCount, 2);
+
+    publicController.clear();
+    streamController.add(0.3);
+    await Future<void>.delayed(Duration.zero);
+    expect(waveformController.sampleCount, 1);
+
+    await streamController.close();
+    waveformController.dispose();
+    publicController.dispose();
+  });
 }

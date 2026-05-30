@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'recorder/recorder_volume_source.dart';
-import 'voice_waveform/mock_volume_source.dart';
-import 'voice_waveform/voice_memo_waveform.dart';
+import 'voice_waveform.dart';
 
 void main() {
   runApp(const VoiceWaveformDemoApp());
@@ -53,10 +52,11 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
   MockVolumeSource? _mockVolumeSource;
   late final RecordingVolumeSource _recorderVolumeSource;
   late Stream<double> _activeVolumeStream;
+  final VoiceMemoWaveformController _waveformController =
+      VoiceMemoWaveformController();
 
   DemoMode _mode = DemoMode.mock;
   String? _errorMessage;
-  int _waveformGeneration = 0;
   int _recordingRequestId = 0;
   bool _isStartInProgress = false;
   bool _isStopInProgress = false;
@@ -74,6 +74,7 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_mockVolumeSource?.dispose());
     unawaited(_recorderVolumeSource.dispose());
+    _waveformController.dispose();
     super.dispose();
   }
 
@@ -118,8 +119,8 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
               ],
               const SizedBox(height: 32),
               VoiceMemoWaveform(
-                key: ValueKey<int>(_waveformGeneration),
                 volumeStream: _activeVolumeStream,
+                controller: _waveformController,
               ),
               const SizedBox(height: 36),
               Wrap(
@@ -169,7 +170,7 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
     setState(() {
       _mode = DemoMode.mock;
       _errorMessage = null;
-      _waveformGeneration++;
+      _waveformController.clear();
     });
   }
 
@@ -187,7 +188,7 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
       setState(() {
         _activeVolumeStream = _recorderVolumeSource.volumeStream;
         _errorMessage = null;
-        _waveformGeneration++;
+        _waveformController.clear();
       });
     }
 
@@ -247,7 +248,7 @@ class _VoiceWaveformDemoPageState extends State<VoiceWaveformDemoPage>
   }
 
   void _clearWaveform() {
-    setState(() => _waveformGeneration++);
+    _waveformController.clear();
   }
 
   Future<void> _stopRecordingForLifecycle() async {

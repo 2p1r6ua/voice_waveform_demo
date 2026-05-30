@@ -24,4 +24,17 @@ void main() {
     expect(height, greaterThan(12));
     expect(height, lessThan(58));
   });
+
+  test('uses a more sensitive default curve for low volumes', () {
+    const mapper = VolumeMapper();
+
+    expect(mapper.mapToHeight(0.25), greaterThan(35));
+  });
+
+  test('supports custom min and max heights', () {
+    const mapper = VolumeMapper(minHeight: 4, maxHeight: 20);
+
+    expect(mapper.mapToHeight(0), 4);
+    expect(mapper.mapToHeight(1), 20);
+  });
 }

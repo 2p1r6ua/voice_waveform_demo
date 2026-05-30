@@ -8,13 +8,15 @@ class WaveformPainter extends CustomPainter {
     required this.controller,
     this.volumeMapper = const VolumeMapper(),
     this.barColor = Colors.white,
+    this.backgroundColor = Colors.black,
   });
 
   final WaveformController controller;
   final VolumeMapper volumeMapper;
   final Color barColor;
+  final Color backgroundColor;
 
-  static final Paint _backgroundPaint = Paint()..color = Colors.black;
+  late final Paint _backgroundPaint = Paint()..color = backgroundColor;
   late final Paint _barPaint = Paint()
     ..color = barColor
     ..style = PaintingStyle.fill;

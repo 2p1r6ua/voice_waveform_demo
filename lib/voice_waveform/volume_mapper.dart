@@ -4,7 +4,7 @@ class VolumeMapper {
   const VolumeMapper({
     this.minHeight = 12.0,
     this.maxHeight = 58.0,
-    this.exponent = 0.6,
+    this.exponent = 0.45,
   });
 
   final double minHeight;
