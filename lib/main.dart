@@ -13,7 +13,7 @@ enum DemoMode { mock, recording, stopped, error }
 
 typedef RecordingVolumeSourceFactory = RecordingVolumeSource Function();
 
-const _demoNoiseGate = 0.16;
+const _demoNoiseGate = 0.14;
 const _demoAttack = 0.50;
 const _demoMaxRisePerTick = 0.18;
 

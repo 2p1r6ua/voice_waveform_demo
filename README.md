@@ -1,76 +1,88 @@
 # Voice Waveform Demo
 
-Flutter demo and reusable Android-first voice waveform component inspired by
-iPhone Voice Memos. The waveform is drawn with `CustomPaint` and consumes a
-plain `Stream<double>` where each volume sample is in the `0.0` to `1.0` range.
+Android-first Flutter voice waveform demo and reusable component inspired by
+iPhone Voice Memos.
 
-## Project Goal
+The waveform is drawn with `CustomPaint` and consumes a plain
+`Stream<double>`. Each sample must be in the `0.0` to `1.0` range. The visual
+component does not depend on microphone APIs, so the same widget can be driven
+by mock data, Android microphone volume, file playback, or any other volume
+source.
 
-- Render white rounded vertical bars on a black background.
-- Scroll smoothly from right to left with the newest bar entering on the right.
-- Keep default bar height between `12dp` and `58dp`.
-- Keep default bar width and gap at `6dp`.
-- Support both mock volume input and Android microphone input.
-- Keep waveform rendering independent from recording and permission logic.
+## 中文说明
 
-Current scope is Android only. iOS, Web, Windows desktop, and publishing are out
-of scope for this development cycle.
+这是一个 Android 优先的 Flutter 语音波形 Demo 和可复用组件。组件效果接近
+iPhone 语音备忘录：黑色背景、白色圆角竖条、最新柱子从右侧进入、旧柱子平滑
+向左滚动。
 
-## Android Environment
+当前范围仅包含 Android。不要在本阶段加入 iOS、Web 或 Windows 桌面实现。
 
-Expected local setup:
+## 项目目标
 
-- Windows development machine
-- Flutter SDK: `D:\dev\flutter`
-- Android SDK: `D:\Android\Sdk`
-- Android physical device testing first
-- Test device used during development: `DBY W09`, Android 12
+- 使用 `CustomPaint` / `CustomPainter` 绘制实时波形。
+- 默认显示白色圆角竖条和黑色背景。
+- 最新柱子从右侧进入，旧柱子向左平滑移动。
+- 默认柱高保持在 `12dp~58dp`。
+- 默认柱宽 `6dp`，柱间距 `6dp`。
+- 支持 Mock 模式和 Android Recording 模式。
+- 保持 waveform 渲染逻辑与录音、权限逻辑分离。
 
-Useful checks:
+## Android 环境要求
+
+- Flutter SDK
+- Android SDK
+- Android Studio 或等价 Android 构建环境
+- 一台 Android 真机或模拟器
+
+检查环境：
 
 ```powershell
-D:\dev\flutter\bin\flutter.bat doctor -v
-D:\dev\flutter\bin\flutter.bat devices
+flutter doctor -v
+flutter devices
 adb devices
 ```
 
-If `flutter` or `dart` is not on `PATH`, call the tools through
-`D:\dev\flutter\bin\flutter.bat` or
-`D:\dev\flutter\bin\cache\dart-sdk\bin\dart.exe`.
-
-## Run Commands
-
-Install or refresh dependencies:
+如果本机没有把 `flutter` 或 `dart` 加入 `PATH`，请改用你本机 Flutter SDK 下的
+实际路径，例如：
 
 ```powershell
-D:\dev\flutter\bin\flutter.bat pub get
+<flutter-sdk>\bin\flutter.bat doctor -v
+<flutter-sdk>\bin\flutter.bat devices
 ```
 
-Run static analysis and tests:
+## 运行命令
+
+安装或刷新依赖：
 
 ```powershell
-D:\dev\flutter\bin\cache\dart-sdk\bin\dart.exe format lib test
-D:\dev\flutter\bin\flutter.bat analyze
-D:\dev\flutter\bin\flutter.bat test
+flutter pub get
 ```
 
-Run on an Android device:
+格式化、分析和测试：
 
 ```powershell
-D:\dev\flutter\bin\flutter.bat devices
-D:\dev\flutter\bin\flutter.bat run -d android
+dart format lib test
+flutter analyze
+flutter test
 ```
 
-If the `android` selector is not accepted by the installed Flutter version, use
-the concrete device id shown by `flutter devices`, for example:
+运行到 Android 设备：
 
 ```powershell
-D:\dev\flutter\bin\flutter.bat run -d 8UTBB22125200669
+flutter devices
+flutter run -d android
 ```
 
-## Demo Modes
+如果当前 Flutter 版本不接受 `-d android`，请使用 `flutter devices` 输出的具体
+设备 ID：
 
-The demo page includes:
+```powershell
+flutter run -d <device-id>
+```
+
+## Demo 模式
+
+Demo 页面包含：
 
 - `Use Mock Source`
 - `Start Recording`
@@ -78,31 +90,29 @@ The demo page includes:
 - `Clear Waveform`
 - `Show Debug` / `Hide Debug`
 
-### Mock Mode
+### Mock 模式
 
-Mock mode uses `MockVolumeSource`, which emits natural voice-like volume values
-without opening the microphone. Use this mode to verify the waveform UI,
-scrolling, smoothing, and visual tuning without Android permission prompts.
+Mock 模式使用 `MockVolumeSource`，不会打开麦克风，也不会触发 Android 权限。
+适合验证 UI、滚动、平滑和视觉调参。
 
-### Recording Mode
+### Recording 模式
 
-Recording mode uses `RecorderVolumeSource`, which wraps the Android microphone
-through the `record` package and emits normalized volume samples. The waveform
-still only receives a `Stream<double>`; it does not depend on microphone APIs.
+Recording 模式使用 `RecorderVolumeSource`，通过 Android 麦克风获取音量，并输出
+`Stream<double>` 给 `VoiceMemoWaveform`。波形组件本身仍然只消费音量流，不直接
+依赖录音 API。
 
-The recording chain includes dB normalization, display dynamic range tuning,
-noise gating, median filtering, max-rise limiting, attack/release smoothing, and
-light impulse suppression for short taps or device bumps.
+录音显示链路包含 dB 归一化、动态范围校准、噪声门、中值滤波、最大上升限制、
+attack/release 平滑和轻量瞬态冲击抑制。
 
-## Reusable Component Usage
+## 可复用组件用法
 
-Minimal usage:
+最小用法：
 
 ```dart
 VoiceMemoWaveform(volumeStream: someVolumeStream)
 ```
 
-Optional controller:
+使用控制器：
 
 ```dart
 final controller = VoiceMemoWaveformController();
@@ -117,7 +127,7 @@ controller.resume();
 controller.clear();
 ```
 
-Common visual and sensitivity parameters:
+常用视觉和灵敏度参数：
 
 ```dart
 VoiceMemoWaveform(
@@ -126,7 +136,7 @@ VoiceMemoWaveform(
   maxBarHeight: 58,
   barWidth: 6,
   barGap: 6,
-  noiseGate: 0.16,
+  noiseGate: 0.14,
   contrastExponent: 1.55,
   attack: 0.50,
   release: 0.18,
@@ -134,16 +144,18 @@ VoiceMemoWaveform(
 )
 ```
 
-## Android Permission
+`noiseGate` 当前默认值是 `0.14`。如果安静环境下柱子仍偏高，可以略微调高；
+如果正常说话被压得太低，可以略微调低。
 
-Microphone recording requires this permission in
-`android/app/src/main/AndroidManifest.xml`:
+## Android 权限
+
+真实录音需要在 `android/app/src/main/AndroidManifest.xml` 中声明：
 
 ```xml
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 ```
 
-The demo handles:
+Demo 已处理：
 
 - permission granted
 - permission denied
@@ -151,44 +163,78 @@ The demo handles:
 - repeated start/stop taps
 - app backgrounding during recording
 
-If permission is permanently denied, enable microphone permission again from
-Android app settings.
+如果权限被永久拒绝，请到 Android 系统设置中重新打开该应用的麦克风权限。
 
-## Troubleshooting
+## 调试信息
 
-### The waveform moves in mock mode but not recording mode
+点击 `Show Debug` 可以查看：
 
-- Confirm microphone permission was granted.
-- Tap `Show Debug` and check whether display volume changes while speaking.
-- Speak close to the device microphone.
-- Check that the device is not using a blocked or unavailable input.
+- current mode
+- raw volume
+- normalized volume
+- display volume
+- smoothed volume
+- estimated bar height
+- impulse suppression state
 
-### Quiet room still shows tall bars
+这些信息只用于调参，不影响普通使用。
 
-- Increase `noiseGate`.
-- Increase `contrastExponent`.
-- Raise `ceilingDb` in `RecorderVolumeSource`.
+## 常见问题排查
 
-### Speech looks too small
+### Mock 模式有波形，Recording 模式没有变化
 
-- Lower `noiseGate`.
-- Increase `attack`.
-- Lower `ceilingDb` toward `-10.0` or `-12.0`.
+- 确认 Android 麦克风权限已授予。
+- 点击 `Show Debug`，观察说话时 display volume 是否变化。
+- 靠近设备麦克风说话。
+- 确认设备输入没有被系统、耳机或其他应用占用。
 
-### Taps or device bumps make large spikes
+### 安静环境下柱子仍偏高
 
-- Lower `maxRisePerTick`.
-- Lower `impulseDamping`.
-- Increase `impulseThreshold`.
+- 提高 `noiseGate`。
+- 提高 `contrastExponent`。
+- 提高 `RecorderVolumeSource` 的 `ceilingDb`。
 
-### Gradle or Android SDK issues
+### 正常说话波形偏低
 
-- Check `D:\Android\Sdk`.
-- Check the Android Studio SDK Manager.
-- If downloads fail, check proxy settings in
-  `C:\Users\hello\.gradle\gradle.properties`.
-- If NDK installation is corrupted, delete the corrupted NDK folder and
-  reinstall it from Android Studio SDK Manager.
+- 降低 `noiseGate`。
+- 提高 `attack`。
+- 将 `ceilingDb` 调低一些，例如接近 `-10.0` 或 `-12.0`。
+
+### 拍桌子或碰设备仍出现明显高柱
+
+- 降低 `maxRisePerTick`。
+- 降低 `impulseDamping`。
+- 提高 `impulseThreshold`。
+
+### Gradle 或 Android SDK 构建失败
+
+- 检查 Android SDK 是否安装完整。
+- 检查 Android Studio SDK Manager。
+- 如果依赖下载失败，检查本机 Gradle 或网络代理设置。
+- 如果 NDK 损坏，删除损坏的 NDK 目录后从 Android Studio SDK Manager 重新安装。
+
+## 上传/分享注意事项
+
+公开上传或发给第三方时，不要包含 Codex 开发过程使用的上下文、路线图或阶段说明
+文件：
+
+- `AGENTS.md`
+- `SPEC.md`
+- `ROADMAP.md`
+- `ANDROID_NOTES.md`
+- `ENVIRONMENT.md`
+- `ADDITIONAL_PHASE.md`
+
+这些文件已加入 `.gitignore`。如果它们已经被当前仓库跟踪，`.gitignore` 不会自动
+将它们从历史或索引中移除；提交前请检查提交清单。
+
+同时不要上传以下本地文件或目录：
+
+- `build/`
+- `.dart_tool/`
+- `.idea/`
+- `.vscode/` 中包含个人配置的文件
+- 任何包含本机用户名、设备序列号、代理地址、绝对路径或临时聊天/截图路径的文件
 
 ## Known Limits
 

@@ -5,7 +5,7 @@ void main() {
   test('gates quiet input to silence', () {
     const normalizer = DisplayVolumeNormalizer();
 
-    expect(normalizer.normalizeVolume(0.15), 0);
+    expect(normalizer.normalizeVolume(0.13), 0);
   });
 
   test('contrast curve lowers small values while preserving peaks', () {

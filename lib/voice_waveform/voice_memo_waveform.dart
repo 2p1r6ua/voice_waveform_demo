@@ -18,7 +18,7 @@ class VoiceMemoWaveform extends StatefulWidget {
     this.backgroundColor = Colors.black,
     this.barInterval = const Duration(milliseconds: 80),
     this.contrastExponent = 1.55,
-    this.noiseGate = 0.16,
+    this.noiseGate = 0.14,
     this.attack = 0.50,
     this.release = 0.18,
     this.maxRisePerTick = 0.18,
