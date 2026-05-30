@@ -14,24 +14,26 @@ class WaveformPainter extends CustomPainter {
   final VolumeMapper volumeMapper;
   final Color barColor;
 
+  static final Paint _backgroundPaint = Paint()..color = Colors.black;
+  late final Paint _barPaint = Paint()
+    ..color = barColor
+    ..style = PaintingStyle.fill;
+
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
+    canvas.drawRect(Offset.zero & size, _backgroundPaint);
 
-    final paint = Paint()
-      ..color = barColor
-      ..style = PaintingStyle.fill;
-
-    final volumes = controller.volumes;
-    if (volumes.isEmpty) {
+    final sampleCount = controller.sampleCount;
+    if (sampleCount == 0) {
       return;
     }
 
     final centerY = size.height / 2;
     final rightEdge = size.width - controller.scrollOffset;
+    final radius = Radius.circular(controller.barWidth / 2);
 
-    for (var index = volumes.length - 1; index >= 0; index--) {
-      final distanceFromNewest = volumes.length - 1 - index;
+    for (var index = sampleCount - 1; index >= 0; index--) {
+      final distanceFromNewest = sampleCount - 1 - index;
       final right = rightEdge - distanceFromNewest * controller.pitch;
       final left = right - controller.barWidth;
 
@@ -42,15 +44,14 @@ class WaveformPainter extends CustomPainter {
         continue;
       }
 
-      final height = volumeMapper.mapToHeight(volumes[index]);
+      final height = volumeMapper.mapToHeight(controller.volumeAt(index));
       final rect = Rect.fromLTWH(
         left,
         centerY - height / 2,
         controller.barWidth,
         height,
       );
-      final radius = Radius.circular(controller.barWidth / 2);
-      canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), paint);
+      canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), _barPaint);
     }
   }
 

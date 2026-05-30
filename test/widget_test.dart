@@ -12,10 +12,22 @@ void main() {
 
     expect(find.byType(Scaffold), findsOneWidget);
     expect(find.byType(VoiceMemoWaveform), findsOneWidget);
-    expect(find.byType(CustomPaint), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(VoiceMemoWaveform),
+        matching: find.byType(CustomPaint),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Status: mock'), findsOneWidget);
+    expect(find.text('Use Mock Source'), findsOneWidget);
+    expect(find.text('Start Recording'), findsOneWidget);
+    expect(find.text('Stop Recording'), findsOneWidget);
+    expect(find.text('Clear Waveform'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 80));
     await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 160));
 
     expect(tester.takeException(), isNull);
   });
